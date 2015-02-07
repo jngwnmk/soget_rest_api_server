@@ -1,4 +1,4 @@
-package hello;
+package soget.model;
 
 import org.springframework.data.annotation.Id;
 

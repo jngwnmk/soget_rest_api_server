@@ -1,4 +1,4 @@
-package hello;
+package soget.controller;
 
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -7,6 +7,10 @@ import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import soget.model.Customer;
+import soget.model.Greeting;
+import soget.repository.CustomerRepository;
 
 @EnableAutoConfiguration
 @RestController
