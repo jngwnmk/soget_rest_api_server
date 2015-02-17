@@ -33,8 +33,8 @@ public class GreetingController {
 		repository.save(new Customer("Bob", name));
 		
 		// fetch all customers
-				System.out.println("Customers found with findAll():");
-				System.out.println("-------------------------------");
+		System.out.println("Customers found with findAll():");
+		System.out.println("-------------------------------");
 				for (Customer customer : repository.findAll()) {
 					System.out.println(customer);
 				}
