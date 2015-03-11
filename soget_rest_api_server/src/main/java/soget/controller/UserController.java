@@ -23,6 +23,20 @@ public class UserController {
 	@Autowired
 	private UserRepository user_repository;
 	
+	@RequestMapping(value = "/login", produces = "text/plain")
+	public String login() {
+		System.out.println(" *** MainRestController.login");
+		return "There is nothing special about login here, just use Authorization: Basic, or provide secure token.\n" +
+			"For testing purposes you can use headers X-Username and X-Password instead of HTTP Basic Access Authentication.\n" +
+			"THIS APPLIES TO ANY REQUEST protected by Spring Security (see filter-mapping).\n\n" +
+			"Realize, please, that Authorization request (or the one with testing X-headers) must be POST, otherwise they are ignored.";
+	}
+
+	@RequestMapping(value = "/logout", method = RequestMethod.GET)
+	public String logout() {
+		System.out.println(" *** MainRestController.logout");
+		return "Logout invalidates token on server-side. It must come as a POST request with valid X-Auth-Token, URL is configured for MyAuthenticationFilter.";
+	}
 	
 	//Register user
 	@RequestMapping(method=RequestMethod.POST)
@@ -37,9 +51,11 @@ public class UserController {
 		user.setFriends(new ArrayList<String>());
 		user.setFriendsRequestRecieved(new ArrayList<String>());
 		user.setFriendsRequestSent(new ArrayList<String>());
+		user.setBookmarks(new ArrayList<String>());
 		user_repository.save(user);
 		return user;
 	}
+	
 	
 	//Password change
 	@RequestMapping(method=RequestMethod.PUT, value="{user_id}")
@@ -86,20 +102,22 @@ public class UserController {
 		
 		//Update send friend request list on my profile 
 		User mine = user_repository.findByUserId(my_id);
+		User friend = user_repository.findByUserId(friend_id);
+		
 		List<String> friendRequestSentList = mine.getFriendsRequestSent();
 		if (friendRequestSentList ==null){
 			friendRequestSentList = new ArrayList<String>();
 		}
-		friendRequestSentList.add(friend_id);
+		friendRequestSentList.add(friend.getId());
 		mine.setFriendsRequestSent(friendRequestSentList);
 		
 		//Update received friend request list on friend's profile 
-		User friend = user_repository.findByUserId(friend_id);
+		
 		List<String> friendRequestReceivedList = friend.getFriendsRequestRecieved();
 		if (friendRequestReceivedList == null){
 			friendRequestReceivedList = new ArrayList<String>();
 		}
-		friendRequestReceivedList.add(my_id);
+		friendRequestReceivedList.add(mine.getId());
 		friend.setFriendsRequestRecieved(friendRequestReceivedList);
 		
 		user_repository.save(mine);
@@ -110,12 +128,13 @@ public class UserController {
 	@RequestMapping(value="/friends/{my_id}/{friend_id}", method = RequestMethod.PUT)
 	public void acceptFriendRequest(@PathVariable String my_id, @PathVariable String friend_id){
 		User mine = user_repository.findByUserId(my_id);
-		mine.getFriendsRequestRecieved().remove(friend_id);
-		mine.getFriends().add(friend_id);
-		
 		User friend = user_repository.findByUserId(friend_id);
-		friend.getFriendsRequestSent().remove(my_id);
-		friend.getFriends().add(my_id);
+		
+		mine.getFriendsRequestRecieved().remove(friend.getId());
+		mine.getFriends().add(friend.getId());
+				
+		friend.getFriendsRequestSent().remove(mine.getId());
+		friend.getFriends().add(mine.getId());
 	    
 	    user_repository.save(mine);
 	    user_repository.save(friend);

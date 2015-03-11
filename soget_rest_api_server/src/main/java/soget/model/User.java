@@ -1,6 +1,8 @@
 package soget.model;
 
+import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.springframework.data.annotation.Id;
 
@@ -16,8 +18,33 @@ public class User {
 	private List<String> friends;
 	private List<String> friendsRequestRecieved;
 	private List<String> friendsRequestSent;
+	private List<String> bookmarks;
+	private String[] roles;
+	
+	public User(String userId, String name, String password, String... roles){
+		this.userId = userId;
+		this.name = name;
+		this.password = password;
+		this.roles = roles;
+	}
 	
 	
+	public String[] getRoles() {
+		return roles;
+	}
+
+
+	public void setRoles(String[] roles) {
+		this.roles = roles;
+	}
+
+
+	public List<String> getBookmarks() {
+		return bookmarks;
+	}
+	public void setBookmarks(List<String> bookmarks) {
+		this.bookmarks = bookmarks;
+	}
 	public List<String> getFriends() {
 		return friends;
 	}
@@ -72,6 +99,22 @@ public class User {
 	public void setFacebookProfile(String facebookProfile) {
 		this.facebookProfile = facebookProfile;
 	}
+	
+	@Override
+	public boolean equals(Object o){
+		return this==o || o!=null & o instanceof User && Objects.equals(userId, ((User)o).userId);
+	}
+	
+	@Override
+	public int hashCode(){
+		return Objects.hashCode(userId);
+	}
+	
+	@Override
+	public String toString(){
+		return "User{"+ "userId="+userId+","+"name="+name+",password="+password+",roles="+Arrays.toString(roles)+"}";
+	}
+	
 	
 	
 }
