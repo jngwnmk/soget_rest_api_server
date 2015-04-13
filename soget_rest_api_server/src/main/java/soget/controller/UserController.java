@@ -5,6 +5,11 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.domain.Sort.Direction;
+import org.springframework.data.domain.Sort.Order;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -20,6 +25,8 @@ import soget.repository.UserRepository;
 @RequestMapping("/user")
 public class UserController {
     
+	private static int PAGE_SIZE = 10;
+	
 	@Autowired
 	private UserRepository user_repository;
 	
@@ -39,15 +46,24 @@ public class UserController {
 	}
 	
 	//Register user
-	@RequestMapping(method=RequestMethod.POST)
+	@RequestMapping(method=RequestMethod.POST ,value = "/register")
 	@ResponseBody
 	public User create(@RequestBody User user){
+		
+		User find_user = user_repository.findByUserId(user.getUserId());
+		if(find_user!=null){
+			//Duplicated user_id
+			System.out.println("duplicated user_id");
+			return null;
+		}
+		
 		System.out.println("Register User");
 		System.out.println("name: "+user.getName());
 		System.out.println("user_id: "+user.getUserId());
 		System.out.println("password: "+user.getPassword());
 		System.out.println("email: "+user.getEmail());
 		System.out.println("facebook: "+user.getFacebookProfile());
+		
 		user.setFriends(new ArrayList<String>());
 		user.setFriendsRequestRecieved(new ArrayList<String>());
 		user.setFriendsRequestSent(new ArrayList<String>());
@@ -79,10 +95,33 @@ public class UserController {
 	//Get all friend List
 	@RequestMapping(value="/friends/{my_id}", method=RequestMethod.GET)
 	@ResponseBody
-	public List<String> getFriendList(@PathVariable String my_id){
+	public List<User> getFriendList(@PathVariable String my_id){
 		System.out.println("Show Friends");
 		User mine = user_repository.findByUserId(my_id);
-	    return mine.getFriends();
+		List<String> frined_id_list = mine.getFriends();
+		return (List<User>) user_repository.findAll(frined_id_list);
+	}
+	
+	//Get all friend request sent list  
+	@RequestMapping(value="/friends/sent/{my_id}", method=RequestMethod.GET)
+	@ResponseBody
+	public List<User> getFriendRequestSentList(@PathVariable String my_id){
+		System.out.println("Show request sent Friends");
+		User mine = user_repository.findByUserId(my_id);
+		List<String> frined_id_list = mine.getFriendsRequestSent();
+		List<User> friend_list = (List<User>) user_repository.findAll(frined_id_list);
+	    return friend_list;
+	}
+	
+	//Get all friend received list  
+    @RequestMapping(value="/friends/receive/{my_id}", method=RequestMethod.GET)
+	@ResponseBody
+	public List<User> getFriendRequestReceivedList(@PathVariable String my_id){
+			System.out.println("Show reqeust receive Friends");
+			User mine = user_repository.findByUserId(my_id);
+			List<String> frined_id_list = mine.getFriendsRequestRecieved();
+			List<User> friend_list = (List<User>) user_repository.findAll(frined_id_list);
+		    return friend_list;
 	}
 	
 	//find friend 

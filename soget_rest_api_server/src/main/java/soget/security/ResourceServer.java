@@ -14,10 +14,14 @@ public class ResourceServer extends ResourceServerConfigurerAdapter{
     public void configure(HttpSecurity http) throws Exception {
          // @formatter:off
          http
+         .authorizeRequests().antMatchers("/user/register").permitAll()
+         .and()
          .requestMatchers().antMatchers("/**")    
          .and()
          .authorizeRequests()
-         .anyRequest().access("#oauth2.hasScope('write')"); //[4]
+         .anyRequest().access("#oauth2.hasScope('write')");
+         
+          //[4]
          // @formatter:on
     }
 

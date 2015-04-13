@@ -28,7 +28,7 @@ public class Application extends SpringBootServletInitializer{
 	// CORS
 		@Bean
 		FilterRegistrationBean corsFilter(
-				@Value("${tagit.origin:http://localhost:9000}") String origin) {
+				@Value("${tagit.origin:http://localhost:9000}") final String origin) {
 			return new FilterRegistrationBean(new Filter() {
 				public void doFilter(ServletRequest req, ServletResponse res,
 						FilterChain chain) throws IOException, ServletException {

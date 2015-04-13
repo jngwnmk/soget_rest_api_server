@@ -19,25 +19,6 @@ public class User {
 	private List<String> friendsRequestRecieved;
 	private List<String> friendsRequestSent;
 	private List<String> bookmarks;
-	private String[] roles;
-	
-	public User(String userId, String name, String password, String... roles){
-		this.userId = userId;
-		this.name = name;
-		this.password = password;
-		this.roles = roles;
-	}
-	
-	
-	public String[] getRoles() {
-		return roles;
-	}
-
-
-	public void setRoles(String[] roles) {
-		this.roles = roles;
-	}
-
 
 	public List<String> getBookmarks() {
 		return bookmarks;
@@ -112,7 +93,7 @@ public class User {
 	
 	@Override
 	public String toString(){
-		return "User{"+ "userId="+userId+","+"name="+name+",password="+password+",roles="+Arrays.toString(roles)+"}";
+		return "User{"+ "userId="+userId+","+"name="+name+",password="+password+"}";
 	}
 	
 	

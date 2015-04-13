@@ -1,8 +1,6 @@
 package soget.controller;
 
-import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import org.junit.Before;
@@ -149,13 +147,16 @@ public class ControllerTest {
 	private void createUser(String name, String user_id, String password, String email, String facebook) throws Exception {
 	    ObjectMapper mapper = new ObjectMapper();
 		
-		User user = new User(user_id, name, password,"");
+		User user = new User();
+		user.setUserId(user_id);
+		user.setName(name);
+		user.setPassword(password);
 		user.setEmail(email);
 		user.setFacebookProfile(facebook);
 		String test = mapper.writeValueAsString(user);
 		System.out.println(test);
 		MockHttpServletRequestBuilder requestBuilder = 
-				MockMvcRequestBuilders.post("/user")
+				MockMvcRequestBuilders.post("/user/register")
 				.content(test)
 				.contentType(MediaType.APPLICATION_JSON);
 		

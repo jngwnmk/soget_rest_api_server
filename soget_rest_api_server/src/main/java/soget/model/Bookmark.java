@@ -10,7 +10,7 @@ public class Bookmark {
 	private String id;
 	private String title;
 	private String url;
-	
+	private String img_url;
 	private String initUserId;
 	private List<String> followers;
 	private Date date;
@@ -19,6 +19,13 @@ public class Bookmark {
 	private List<String> tags;
 	private List<String> category;
 	
+	
+	public String getImg_url() {
+		return img_url;
+	}
+	public void setImg_url(String img_url) {
+		this.img_url = img_url;
+	}
 	public String getId() {
 		return id;
 	}
