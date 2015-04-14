@@ -18,7 +18,10 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.filter.CharacterEncodingFilter;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import soget.Application;
+import soget.model.User;
 
 @RunWith(SpringJUnit4ClassRunner.class)
 @SpringApplicationConfiguration(classes = Application.class)
@@ -41,18 +44,39 @@ public class ManageControllerTest {
 	}
 	
 	//Delete all user
-		@Test
-		public void a_deleteAllUserTest() throws Exception {
+	@Test
+	public void deleteAllUserTest() throws Exception {
 			MockHttpServletRequestBuilder requestBuilder = 
 					MockMvcRequestBuilders.delete("/manage/user").accept(MediaType.APPLICATION_JSON);
 			mockMvc.perform(requestBuilder).andDo(print()).andExpect(status().isOk());
-		}
+	}
 			
-		//Delete all bookmark
-		@Test
-		public void a_delteAllBookmarkTest() throws Exception {
+	//Delete all bookmark
+	@Test
+	public void delteAllBookmarkTest() throws Exception {
 			MockHttpServletRequestBuilder requestBuilder = 
 					MockMvcRequestBuilders.delete("/manage/bookmark").accept(MediaType.APPLICATION_JSON);
 			mockMvc.perform(requestBuilder).andDo(print()).andExpect(status().isOk());
-		}
+	}
+	
+	//admin register
+	@Test
+	public void makeAdminTest() throws Exception {
+		ObjectMapper mapper = new ObjectMapper();
+		
+		User user = new User();
+		user.setUserId("admin");
+		user.setName("admin");
+		user.setPassword("admin");
+		user.setEmail("admin@gmail.com");
+		user.setFacebookProfile("admin@gmail.com");
+		String content = mapper.writeValueAsString(user);
+		
+		MockHttpServletRequestBuilder requestBuilder = 
+			MockMvcRequestBuilders.post("/manage/admin")
+			.content(content)
+			.contentType(MediaType.APPLICATION_JSON);
+		mockMvc.perform(requestBuilder).andDo(print()).andExpect(status().isOk());
+	}
+	
 }

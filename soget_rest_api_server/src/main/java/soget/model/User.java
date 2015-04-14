@@ -1,6 +1,5 @@
 package soget.model;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 
@@ -15,11 +14,13 @@ public class User {
 	private String email;
 	private String password;
 	private String facebookProfile;
+	private String invitationCode;
 	private List<String> friends;
-	private List<String> friendsRequestRecieved;
+	private List<String> friendsRequestReceived;
 	private List<String> friendsRequestSent;
 	private List<String> bookmarks;
-
+	private List<String> invitation;
+	
 	public List<String> getBookmarks() {
 		return bookmarks;
 	}
@@ -32,11 +33,12 @@ public class User {
 	public void setFriends(List<String> friends) {
 		this.friends = friends;
 	}
-	public List<String> getFriendsRequestRecieved() {
-		return friendsRequestRecieved;
+	
+	public List<String> getFriendsRequestReceived() {
+		return friendsRequestReceived;
 	}
-	public void setFriendsRequestRecieved(List<String> friendsRequestRecieved) {
-		this.friendsRequestRecieved = friendsRequestRecieved;
+	public void setFriendsRequestReceived(List<String> friendsRequestReceived) {
+		this.friendsRequestReceived = friendsRequestReceived;
 	}
 	public List<String> getFriendsRequestSent() {
 		return friendsRequestSent;
@@ -79,6 +81,19 @@ public class User {
 	}
 	public void setFacebookProfile(String facebookProfile) {
 		this.facebookProfile = facebookProfile;
+	}
+	
+	public List<String> getInvitation() {
+		return invitation;
+	}
+	public void setInvitation(List<String> invitation) {
+		this.invitation = invitation;
+	}
+	public String getInvitationCode() {
+		return invitationCode;
+	}
+	public void setInvitationCode(String invitationCode) {
+		this.invitationCode = invitationCode;
 	}
 	
 	@Override

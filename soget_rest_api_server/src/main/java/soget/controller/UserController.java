@@ -2,14 +2,10 @@ package soget.controller;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Sort;
-import org.springframework.data.domain.Sort.Direction;
-import org.springframework.data.domain.Sort.Order;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -19,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import soget.model.User;
 import soget.repository.UserRepository;
+import soget.security.Util;
 
 @EnableAutoConfiguration
 @RestController
@@ -46,9 +43,12 @@ public class UserController {
 	}
 	
 	//Register user
+	/*
+	 * Return created User object or null(if duplicated userId)
+	 */
 	@RequestMapping(method=RequestMethod.POST ,value = "/register")
 	@ResponseBody
-	public User create(@RequestBody User user){
+	public User create(@RequestBody User user) throws Exception{
 		
 		User find_user = user_repository.findByUserId(user.getUserId());
 		if(find_user!=null){
@@ -63,15 +63,78 @@ public class UserController {
 		System.out.println("password: "+user.getPassword());
 		System.out.println("email: "+user.getEmail());
 		System.out.println("facebook: "+user.getFacebookProfile());
+		System.out.println("invitation code: "+user.getInvitationCode());
 		
 		user.setFriends(new ArrayList<String>());
-		user.setFriendsRequestRecieved(new ArrayList<String>());
+		user.setFriendsRequestReceived(new ArrayList<String>());
 		user.setFriendsRequestSent(new ArrayList<String>());
 		user.setBookmarks(new ArrayList<String>());
-		user_repository.save(user);
+		user.setInvitation(new ArrayList<String>());
+		
+		String decrypt = soget.security.Util.Decrypt(user.getInvitationCode(), Util.KEY);
+		StringTokenizer st = new StringTokenizer(decrypt,"|");
+		String hostUserId = st.nextToken();
+		String invitationNumber = st.nextToken();
+	
+		//Make friendship between new user and host user 
+		User friend = user_repository.findByUserId(hostUserId);
+		User new_user = user_repository.save(user);
+	
+		friend.getFriends().add(new_user.getId());
+		new_user.getFriends().add(friend.getId());
+		
+		//Delete invitation number from invitation list
+		List<String> invitationList = friend.getInvitation();
+		invitationList.remove(user.getInvitationCode());
+		friend.setInvitation(invitationList);
+		
+		user_repository.save(friend);
+		user_repository.save(new_user);
+		
 		return user;
 	}
 	
+	//Check Duplicated userId
+	/*
+	 * return true if it is not duplicated userId or false
+	 */
+	@RequestMapping(method=RequestMethod.GET, value="/register/checkUserId/{user_id}")
+	@ResponseBody
+	public boolean checkUserId(@PathVariable String user_id){
+		User find_user = user_repository.findByUserId(user_id);
+		if(find_user!=null){
+			//Duplicated user_id
+			System.out.println("duplicated user_id");
+			return false;
+		} 
+		return true;
+	}
+	
+	//Check Invitation code
+	/*
+	 * Code :  {UserId}|{Invitation Code} 
+	 */
+	@RequestMapping(method=RequestMethod.GET, value="/register/checkInvitationCode/{code}")
+	@ResponseBody
+	public boolean checkInvitationCode(@PathVariable String code) throws Exception{
+		 String decrypt = soget.security.Util.Decrypt(code, Util.KEY);
+		 StringTokenizer st = new StringTokenizer(decrypt,"|");
+		 String hostUserId = st.nextToken();
+		 String invitationNumber = st.nextToken();
+		 User host_user = user_repository.findByUserId(hostUserId);
+		 if(host_user==null){
+			 System.out.println("unvalidated invitation code");
+			 return false;
+		 } else {
+			 if(host_user.getInvitation().contains(invitationNumber))
+			 {
+				 return true;
+			 } else {
+				 return false;
+			 }
+		 }
+		 
+	}
 	
 	//Password change
 	@RequestMapping(method=RequestMethod.PUT, value="{user_id}")
@@ -119,7 +182,7 @@ public class UserController {
 	public List<User> getFriendRequestReceivedList(@PathVariable String my_id){
 			System.out.println("Show reqeust receive Friends");
 			User mine = user_repository.findByUserId(my_id);
-			List<String> frined_id_list = mine.getFriendsRequestRecieved();
+			List<String> frined_id_list = mine.getFriendsRequestReceived();
 			List<User> friend_list = (List<User>) user_repository.findAll(frined_id_list);
 		    return friend_list;
 	}
@@ -152,12 +215,12 @@ public class UserController {
 		
 		//Update received friend request list on friend's profile 
 		
-		List<String> friendRequestReceivedList = friend.getFriendsRequestRecieved();
+		List<String> friendRequestReceivedList = friend.getFriendsRequestReceived();
 		if (friendRequestReceivedList == null){
 			friendRequestReceivedList = new ArrayList<String>();
 		}
 		friendRequestReceivedList.add(mine.getId());
-		friend.setFriendsRequestRecieved(friendRequestReceivedList);
+		friend.setFriendsRequestReceived(friendRequestReceivedList);
 		
 		user_repository.save(mine);
 		user_repository.save(friend);
@@ -169,7 +232,7 @@ public class UserController {
 		User mine = user_repository.findByUserId(my_id);
 		User friend = user_repository.findByUserId(friend_id);
 		
-		mine.getFriendsRequestRecieved().remove(friend.getId());
+		mine.getFriendsRequestReceived().remove(friend.getId());
 		mine.getFriends().add(friend.getId());
 				
 		friend.getFriendsRequestSent().remove(mine.getId());

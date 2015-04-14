@@ -50,16 +50,14 @@ public class ControllerTest {
 		mockMvc = MockMvcBuilders.standaloneSetup(userController,bookmarkController).addFilter(filter).build();
 	}
 		
-	
-		
 	//Register User 
 	@Test
 	public void a_createUserTest() throws Exception {
-		createUser("test", "test", "1234", "test@gmail.com", "test@gmail.com");
-		createUser("정원묵", "jngwnmk", "1234", "jngwnmk@gmail.com", "jngwnmk@gmail.com");
-		createUser("정우성", "woosung", "1234", "woosung@gmail.com", "woosung@gmail.com");
-		createUser("신민아", "mina", "1234", "mina@gmail.com", "mina@gmail.com");
-		createUser("전지현", "jihyeon", "1234", "jihyeon@gmail.com", "jihyeon@gmail.com");
+		createUser("test", "test", "1234", "test@gmail.com", "test@gmail.com","5C2SDf/Ael5T39Mi8zoqSOkVZH6ZlHlvxNr0dLSC3UInFrXL57bIifllaEzXUuh0");
+		createUser("정원묵", "jngwnmk", "1234", "jngwnmk@gmail.com", "jngwnmk@gmail.com","AAhGZeOsYhirzeNyy5wEP8/bYcUWRBaJ/4A/qWqw41HrYMFMlO2QA9X0ksjS1QL3");
+		createUser("정우성", "woosung", "1234", "woosung@gmail.com", "woosung@gmail.com","rN2o6ja7VQx0H4iXHSWVImUqV7OcjIDEUyWSow9KNzZOa+GMvOEbaBakQQevM1zP");
+		createUser("신민아", "mina", "1234", "mina@gmail.com", "mina@gmail.com","7fIwFDosooRDbDxmptCqBC4eMY8L7FoPaSWfFIeLKQ6W+sznCRMKOQIkPQ5R792O");
+		createUser("전지현", "jihyeon", "1234", "jihyeon@gmail.com", "jihyeon@gmail.com","9EhVRbzD9RnoEiZ6eYvokP596MPFi1mgs/m0/iCujwLFm5hBmJ+/B/9ssJjodmrL");
 	}
 	
 	//Change password
@@ -134,17 +132,8 @@ public class ControllerTest {
 		mockMvc.perform(requestBuilder).andDo(print())
 		.andExpect(status().isOk());
 	}
-
-	/*//Delete user
-	@Test
-	public void deleteUserTest() throws Exception {
-		deleteUser("test");
-	}*/
 	
-	
-	
-	
-	private void createUser(String name, String user_id, String password, String email, String facebook) throws Exception {
+	private void createUser(String name, String user_id, String password, String email, String facebook, String invitationCode) throws Exception {
 	    ObjectMapper mapper = new ObjectMapper();
 		
 		User user = new User();
@@ -153,6 +142,7 @@ public class ControllerTest {
 		user.setPassword(password);
 		user.setEmail(email);
 		user.setFacebookProfile(facebook);
+		user.setInvitationCode(invitationCode);
 		String test = mapper.writeValueAsString(user);
 		System.out.println(test);
 		MockHttpServletRequestBuilder requestBuilder = 
