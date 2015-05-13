@@ -16,9 +16,16 @@ public class Util {
 	
     public static BigInteger nextRandomInteger() {
 			SecureRandom random = new SecureRandom();
-		    return new BigInteger(130, random);
+		    return new BigInteger(10, random);
     }
 		
+    public static boolean isAlphaNumeric(String s){
+	    String pattern= "^[a-zA-Z0-9]*$";
+	        if(s.matches(pattern)){
+	            return true;
+	        }
+	        return false;   
+	}
 	
 	public static String Decrypt(String text, String key) throws Exception
     {

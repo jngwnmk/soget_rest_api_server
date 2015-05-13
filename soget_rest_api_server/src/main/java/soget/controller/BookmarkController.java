@@ -11,13 +11,16 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.domain.Sort.Direction;
 import org.springframework.data.domain.Sort.Order;
+import org.springframework.data.mongodb.core.MongoOperations;
+import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-
+import static org.springframework.data.mongodb.core.query.Criteria.where;
+import static org.springframework.data.mongodb.core.query.Query.query;
 import soget.model.Bookmark;
 import soget.model.Comment;
 import soget.model.User;
@@ -37,6 +40,7 @@ public class BookmarkController {
 	@Autowired
 	private UserRepository user_repository;
 	
+	@Autowired private MongoOperations mongoOps;
 	
 	//Get My bookmark list
 	@RequestMapping(method=RequestMethod.GET, value="{my_id}")
@@ -51,7 +55,7 @@ public class BookmarkController {
 	}
 	
 	//Get friend's recent bookmark list
-	@RequestMapping(method=RequestMethod.GET, value="/home/friends/{my_id}/{page_num}")
+	/*@RequestMapping(method=RequestMethod.GET, value="/home/friends/{my_id}/{page_num}")
 	@ResponseBody
 	public Page<Bookmark> getFriendsBookmarkList(@PathVariable String my_id, @PathVariable int page_num){
 			System.out.println("getFriendsBookmarkList");
@@ -59,6 +63,31 @@ public class BookmarkController {
 			List<String> friends = mine.getFriends();
 			System.out.println(friends.toString());
 			return bookmark_repository.findByInitUserIdIn(friends, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+	}*/
+	
+	//Get friend's recent bookmark list
+	@RequestMapping(method=RequestMethod.GET, value="/home/friends/{my_id}/{date}/{page_num}")
+	@ResponseBody
+	public Page<Bookmark> getFriendsBookmarkListWithDate(@PathVariable String my_id, @PathVariable long date,@PathVariable int page_num){
+		System.out.println("getFriendsBookmarkList");
+		User mine = user_repository.findByUserId(my_id);
+		List<String> friends = mine.getFriends();
+		System.out.println(friends.toString());
+		List<String> my_bookmark = mine.getBookmarks();
+		List<String> my_trashcan = mine.getTrashcan();
+		List<String> exclusivelist = new ArrayList<String>();
+		for(String bookmark : my_bookmark){
+			exclusivelist.add(bookmark);
+		}
+		
+		for(String trash : my_trashcan){
+			exclusivelist.add(trash);
+		}
+		
+		return bookmark_repository.findByInitUserIdInAndIdNotInAndDateLessThan(friends, exclusivelist, date ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		//return bookmark_repository.findByInitUserIdInAndDateLessThan(friends, date ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		//return bookmark_repository.findByDateLessThan(new Date(date*1000) ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		//return bookmark_repository.findByDateLessThanAndInitUserIdIn(date,friends ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
 	}
 	
 	//Get all user's recent bookmark list
@@ -83,7 +112,7 @@ public class BookmarkController {
 	@RequestMapping(method=RequestMethod.PUT, value="{user_id}/{bookmark_id}")
 	@ResponseBody
 	public void updateBookmarkList(@PathVariable String user_id, @PathVariable String bookmark_id){
-		System.out.println("get bookmark");
+		System.out.println("add bookmark");
 		User mine = user_repository.findByUserId(user_id);
 		mine.getBookmarks().add(bookmark_id);
 		
@@ -95,23 +124,46 @@ public class BookmarkController {
 		
 	}
 	
+	//Insert {bookmark_id} to my trashcan list
+	@RequestMapping(method=RequestMethod.PUT, value="/trashcan/{user_id}/{bookmark_id}")
+	@ResponseBody
+	public void updateTrashcanList(@PathVariable String user_id, @PathVariable String bookmark_id){
+		System.out.println("add trash");
+		User mine = user_repository.findByUserId(user_id);
+		mine.getTrashcan().add(bookmark_id);
+		user_repository.save(mine);
+		
+	}
+	
 	//Insert new bookmark into my list
 	@RequestMapping(method=RequestMethod.POST)
 	@ResponseBody
 	public Bookmark createBookmark(@RequestBody Bookmark bookmark){
+		
+		User user_id = user_repository.findByUserId(bookmark.getInitUserId());
+		bookmark.setInitUserId(user_id.getId());
+		bookmark.setInitUserName(user_id.getName());
+		bookmark.setInitUserNickName(user_id.getUserId());
+		
 		System.out.println("Insert new bookmark");
 		System.out.println("title: "+bookmark.getTitle());
 		System.out.println("url: "+bookmark.getUrl());
-		User user_id = user_repository.findByUserId(bookmark.getInitUserId());
 		System.out.println("init_user_id: "+user_id.getId());
-		bookmark.setInitUserId(user_id.getId());
+		System.out.println("init_user_nick: "+user_id.getUserId());
+		System.out.println("init_user_name: "+user_id.getName());
 		System.out.println("privacy: "+bookmark.isPrivacy());
 		
 		//Create new bookmark
 		bookmark.setFollowers(new ArrayList<String>());
-		bookmark.setDate(new Date());
+		bookmark.setDate(System.currentTimeMillis());
 		bookmark.setComments(new ArrayList<Comment>());
-		bookmark.setTags(new ArrayList<String>());
+		
+		if(bookmark.getTags()==null){
+			bookmark.setTags(new ArrayList<String>());
+		} else {
+			bookmark.setTags(bookmark.getTags());
+		}
+		
 		bookmark.setCategory(new ArrayList<String>());
 		
 		Bookmark saved_bookmark = bookmark_repository.save(bookmark);

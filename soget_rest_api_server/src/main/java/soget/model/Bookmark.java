@@ -12,8 +12,10 @@ public class Bookmark {
 	private String url;
 	private String img_url;
 	private String initUserId;
+	private String initUserName;
+	private String initUserNickName;
 	private List<String> followers;
-	private Date date;
+	private long date;
 	private boolean privacy;
 	private List<Comment> comments;
 	private List<String> tags;
@@ -56,10 +58,10 @@ public class Bookmark {
 	public void setFollowers(List<String> followers) {
 		this.followers = followers;
 	}
-	public Date getDate() {
+	public long getDate() {
 		return date;
 	}
-	public void setDate(Date date) {
+	public void setDate(long date) {
 		this.date = date;
 	}
 	public boolean isPrivacy() {
@@ -85,6 +87,18 @@ public class Bookmark {
 	}
 	public void setCategory(List<String> category) {
 		this.category = category;
+	}
+	public String getInitUserName() {
+		return initUserName;
+	}
+	public void setInitUserName(String initUserName) {
+		this.initUserName = initUserName;
+	}
+	public String getInitUserNickName() {
+		return initUserNickName;
+	}
+	public void setInitUserNickName(String initUserNickName) {
+		this.initUserNickName = initUserNickName;
 	}
 	
 	

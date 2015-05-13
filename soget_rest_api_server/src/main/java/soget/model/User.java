@@ -19,6 +19,7 @@ public class User {
 	private List<String> friendsRequestReceived;
 	private List<String> friendsRequestSent;
 	private List<String> bookmarks;
+	private List<String> trashcan;
 	private List<String> invitation;
 	
 	public List<String> getBookmarks() {
@@ -96,6 +97,13 @@ public class User {
 		this.invitationCode = invitationCode;
 	}
 	
+	
+	public List<String> getTrashcan() {
+		return trashcan;
+	}
+	public void setTrashcan(List<String> trashcan) {
+		this.trashcan = trashcan;
+	}
 	@Override
 	public boolean equals(Object o){
 		return this==o || o!=null & o instanceof User && Objects.equals(userId, ((User)o).userId);

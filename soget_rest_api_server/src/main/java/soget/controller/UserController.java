@@ -57,6 +57,11 @@ public class UserController {
 			return null;
 		}
 		
+		if(!Util.isAlphaNumeric(user.getUserId())){
+			//Non alpha numeric user id 
+			System.out.println("invalid user id");
+			return null;
+		}
 		System.out.println("Register User");
 		System.out.println("name: "+user.getName());
 		System.out.println("user_id: "+user.getUserId());
@@ -69,6 +74,7 @@ public class UserController {
 		user.setFriendsRequestReceived(new ArrayList<String>());
 		user.setFriendsRequestSent(new ArrayList<String>());
 		user.setBookmarks(new ArrayList<String>());
+		user.setTrashcan(new ArrayList<String>());
 		user.setInvitation(new ArrayList<String>());
 		
 		String decrypt = soget.security.Util.Decrypt(user.getInvitationCode(), Util.KEY);
