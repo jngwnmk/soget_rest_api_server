@@ -67,7 +67,7 @@ public class ManageController {
 		user.setFriendsRequestReceived(new ArrayList<String>());
 		user.setFriendsRequestSent(new ArrayList<String>());
 		user.setBookmarks(new ArrayList<String>());
-		
+		user.setTrashcan(new ArrayList<String>());
 		ArrayList<String> invitations = new ArrayList<String>();
 		for(int i = 0 ; i < 10 ; ++i){
 			BigInteger randomInteger = soget.security.Util.nextRandomInteger();
@@ -81,5 +81,30 @@ public class ManageController {
 		return user;
 	}
 	
+	//Get Invitation code
+	@RequestMapping(method=RequestMethod.GET, value="/admin/invitation")
+	@ResponseBody
+	public ArrayList<String> getInvitationCode() throws Exception{
+		System.out.println("getInivationCode()");
+		User admin = user_repository.findByUserId("admin");
+		
+		return (ArrayList<String>)(admin.getInvitation());
+	}
+	
+	//Update Invitation code
+	@RequestMapping(method=RequestMethod.PUT, value="/admin/invitation")
+	@ResponseBody
+	public void updateInvitationCode() throws Exception{
+		System.out.println("updateInvitationCode()");
+		User admin = user_repository.findByUserId("admin");
+		ArrayList<String> invitations = new ArrayList<String>();
+		for(int i = 0 ; i < 10 ; ++i){
+			BigInteger randomInteger = soget.security.Util.nextRandomInteger();
+			String encrypt = soget.security.Util.Encrypt(admin.getUserId()+"|"+randomInteger, Util.KEY);
+			invitations.add(encrypt);
+		}
+		admin.getInvitation().addAll(invitations);
+		user_repository.save(admin);
+	}
 	
 }

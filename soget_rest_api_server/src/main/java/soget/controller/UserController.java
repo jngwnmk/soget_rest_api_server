@@ -1,5 +1,6 @@
 package soget.controller;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
@@ -201,6 +202,23 @@ public class UserController {
 			return user_repository.findByUserId(user_id);
 	}
 	
+	//find new user
+	@RequestMapping(value="/search/{user_id}/{keyword}", method=RequestMethod.GET)
+	@ResponseBody
+	public ArrayList<User> findNewUser(@PathVariable String user_id, @PathVariable String keyword){
+		System.out.println("search");
+		User me = user_repository.findByUserId(user_id);
+		ArrayList<User> search_user = user_repository.findByUserIdLike(keyword);
+		ArrayList<User> refined_search_user = new ArrayList<User>();
+		for(int i = 0 ; i < search_user.size() ; ++i){
+			User user = search_user.get(i);
+			if(!me.getId().equals(user.getId())&&!me.getFriends().contains(user.getId())&&!me.getFriendsRequestReceived().contains(user.getId())&&!me.getFriendsRequestSent().contains(user.getId())){
+				refined_search_user.add(user);
+			}
+		}
+		return refined_search_user;
+	}
+	
 	//Send friend request 
 	@RequestMapping(value="/friends/{my_id}/{friend_id}", method = RequestMethod.POST)
 	public void sendFriendRequest(@PathVariable String my_id, @PathVariable String friend_id){
@@ -247,5 +265,34 @@ public class UserController {
 	    user_repository.save(mine);
 	    user_repository.save(friend);
 	}
+	
+	//Make Invitation Code
+	@RequestMapping(method=RequestMethod.PUT, value="/invitation/{user_id}")
+	@ResponseBody
+	public ArrayList<String> updateInvitationCode(@PathVariable String user_id) throws Exception{
+		System.out.println("updateInvitationCode()");
+		User admin = user_repository.findByUserId(user_id);
+		ArrayList<String> invitations = new ArrayList<String>();
+		for(int i = 0 ; i < 10 ; ++i){
+			BigInteger randomInteger = soget.security.Util.nextRandomInteger();
+			String encrypt = soget.security.Util.Encrypt(admin.getUserId()+"|"+randomInteger, Util.KEY);
+			invitations.add(encrypt);
+		}
+		admin.getInvitation().addAll(invitations);
+		user_repository.save(admin);
+		return invitations;
+	}
+	
+	//Get Invitation code
+	@RequestMapping(method=RequestMethod.GET, value="/invitation/{user_id}")
+	@ResponseBody
+	public ArrayList<String> getInvitationCode(@PathVariable String user_id) throws Exception{
+			System.out.println("getInivationCode()");
+			User admin = user_repository.findByUserId(user_id);
+			
+			return (ArrayList<String>)(admin.getInvitation());
+	}
+	
+	
 	
 }

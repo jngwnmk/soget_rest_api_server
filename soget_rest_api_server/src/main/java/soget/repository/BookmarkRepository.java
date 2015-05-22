@@ -13,6 +13,8 @@ public interface BookmarkRepository extends MongoRepository<Bookmark,String>{
 	 Page<Bookmark> findByInitUserId(Iterable<String> user_ids, Pageable pageable);
 	 Page<Bookmark> findByInitUserId(String user_id, Pageable pageable);
 	 
+	 Page<Bookmark> findByIdIn(Iterable<String> ids, Pageable pageable);
+	 //List<Bookmark> findByPrivacyIsFalse(Iterable<String> bookmark_id);
 	 Page<Bookmark> findByInitUserIdIn(Iterable<String> user_ids, Pageable pageable);
 	 Page<Bookmark> findByInitUserIdInAndDateLessThan(Iterable<String> user_ids, long date, Pageable pageable);
 	 Page<Bookmark> findByDateLessThanAndInitUserIdIn(long date,Iterable<String> user_ids, Pageable pageable);

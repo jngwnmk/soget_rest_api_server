@@ -1,5 +1,6 @@
 package soget.controller;
 
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
 import static org.springframework.data.mongodb.core.query.Criteria.where;
 import static org.springframework.data.mongodb.core.query.Query.query;
 import soget.model.Bookmark;
@@ -26,6 +28,7 @@ import soget.model.Comment;
 import soget.model.User;
 import soget.repository.BookmarkRepository;
 import soget.repository.UserRepository;
+import soget.security.Util;
 
 @EnableAutoConfiguration
 @RestController
@@ -43,27 +46,28 @@ public class BookmarkController {
 	@Autowired private MongoOperations mongoOps;
 	
 	//Get My bookmark list
-	@RequestMapping(method=RequestMethod.GET, value="{my_id}")
+	@RequestMapping(method=RequestMethod.GET, value="/{my_id}/{page_num}")
 	@ResponseBody
-	public List<Bookmark> getMyBookmarkList(@PathVariable String my_id){
+	public Page<Bookmark> getMyBookmarkList(@PathVariable String my_id, @PathVariable int page_num){
 		System.out.println("getMyBookmarkList");
 		//get bookmark id list from my profile
 		User mine = user_repository.findByUserId(my_id);
 		List<String> bookmark_ids = mine.getBookmarks();
-		List<Bookmark> bookmark_list = (List<Bookmark>) bookmark_repository.findAll(bookmark_ids);
-		return bookmark_list;
+		System.out.println("bookmark ids: "+bookmark_ids.toString());
+		return bookmark_repository.findByIdIn(bookmark_ids, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
 	}
 	
-	//Get friend's recent bookmark list
-	/*@RequestMapping(method=RequestMethod.GET, value="/home/friends/{my_id}/{page_num}")
+	//Get {user_id}'s bookmark list
+	//Same as getMyBookmarkList(), but not shows the privacy is true
+	@RequestMapping(method=RequestMethod.GET, value="/friend/{friend_id}/{page_num}")
 	@ResponseBody
-	public Page<Bookmark> getFriendsBookmarkList(@PathVariable String my_id, @PathVariable int page_num){
-			System.out.println("getFriendsBookmarkList");
-			User mine = user_repository.findByUserId(my_id);
-			List<String> friends = mine.getFriends();
-			System.out.println(friends.toString());
-			return bookmark_repository.findByInitUserIdIn(friends, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
-	}*/
+	public Page<Bookmark> getFriendBookmarkList(@PathVariable String friend_id, @PathVariable int page_num){
+		System.out.println("getFriendBookmarkList");
+		User friend = user_repository.findByUserId(friend_id);
+		List<String> bookmark_ids = friend.getBookmarks();
+		System.out.println("bookmark ids: "+bookmark_ids.toString());
+		return bookmark_repository.findByIdIn(bookmark_ids, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+	}
 	
 	//Get friend's recent bookmark list
 	@RequestMapping(method=RequestMethod.GET, value="/home/friends/{my_id}/{date}/{page_num}")
@@ -105,22 +109,90 @@ public class BookmarkController {
 		return bookmark_repository.findAll(new PageRequest(0,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
 	}
 	
-	//Get {user_id}'s bookmark list
-	//Same as getMyBookmarkList()
+	
+	private boolean hasAlreadyMarkin(List<String> bookmark_ids, Bookmark bookmark){
+		List<Bookmark> bookmark_list = (List<Bookmark>) bookmark_repository.findAll(bookmark_ids);
+		for(int i = 0 ; i < bookmark_list.size() ; ++i){
+			if(bookmark_list.get(i).getUrl().equals(bookmark.getUrl())){
+				return true;
+			}
+		}	
+		return false;
+	}
+	
+	private ArrayList<String> makeInvitationList(String user_id){
+		ArrayList<String> invitations = new ArrayList<String>();
+		for(int i = 0 ; i < 10 ; ++i){
+			BigInteger randomInteger = soget.security.Util.nextRandomInteger();
+			String encrypt;
+			try {
+				encrypt = soget.security.Util.Encrypt(user_id+"|"+randomInteger, Util.KEY);
+				invitations.add(encrypt);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		return invitations;
+	}
 	
 	//Insert {bookmark_id} to my bookmark list
 	@RequestMapping(method=RequestMethod.PUT, value="{user_id}/{bookmark_id}")
 	@ResponseBody
-	public void updateBookmarkList(@PathVariable String user_id, @PathVariable String bookmark_id){
+	public Bookmark updateBookmarkList(@PathVariable String user_id, @PathVariable String bookmark_id){
 		System.out.println("add bookmark");
-		User mine = user_repository.findByUserId(user_id);
-		mine.getBookmarks().add(bookmark_id);
-		
+		User me = user_repository.findByUserId(user_id);
 		Bookmark bookmark = bookmark_repository.findOne(bookmark_id);
-		bookmark.getFollowers().add(mine.getId());
 		
-		user_repository.save(mine);
+		
+		int bookmark_cnt = 0;
+		if(me.getBookmarks()==null){
+			bookmark_cnt = 0;
+		} else {
+			bookmark_cnt = me.getBookmarks().size();
+		}
+		
+		//Check whether have already markin
+		if(hasAlreadyMarkin(me.getBookmarks(), bookmark)){
+			return null;
+		}
+		
+		//TODO
+		//해당 bookmark_id를 보고 정보를 긁어온 다음, 새로운 Bookmark를 생성하는 방식으로 변경해야 함.
+		//Follower에도 추가하자.
+		
+		//1. 기존 Bookmark 의 Follower에 추가 
+		bookmark.getFollowers().add(me.getId());
 		bookmark_repository.save(bookmark);
+		
+		//2. 새로운 bookmark생성
+		Bookmark new_bookmark = new Bookmark();
+		new_bookmark.setTitle(bookmark.getTitle());
+		new_bookmark.setUrl(bookmark.getUrl());
+		new_bookmark.setInitUserId(me.getId());
+		new_bookmark.setInitUserName(me.getName());
+		new_bookmark.setInitUserNickName(me.getUserId());
+		new_bookmark.setFollowers(new ArrayList<String>());
+		new_bookmark.setDate(System.currentTimeMillis());
+		new_bookmark.setComments(new ArrayList<Comment>());
+		new_bookmark.setTags(new ArrayList<String>());
+		new_bookmark.setCategory(new ArrayList<String>());
+		
+		//3. bookmark 추가 
+		Bookmark saved_bookmark = bookmark_repository.save(new_bookmark);
+		
+		//4. update user info list
+		me.getBookmarks().add(saved_bookmark.getId());
+		
+		//5. 만약 첫번째 Get 이면, Invitation code생성
+		if(bookmark_cnt==0){
+			me.setInvitation(makeInvitationList(me.getUserId()));
+		}
+		
+		user_repository.save(me);
+		
+		return saved_bookmark;
 		
 	}
 	
@@ -129,10 +201,9 @@ public class BookmarkController {
 	@ResponseBody
 	public void updateTrashcanList(@PathVariable String user_id, @PathVariable String bookmark_id){
 		System.out.println("add trash");
-		User mine = user_repository.findByUserId(user_id);
-		mine.getTrashcan().add(bookmark_id);
-		user_repository.save(mine);
-		
+		User me = user_repository.findByUserId(user_id);
+		me.getTrashcan().add(bookmark_id);
+		user_repository.save(me);
 	}
 	
 	//Insert new bookmark into my list
@@ -140,17 +211,29 @@ public class BookmarkController {
 	@ResponseBody
 	public Bookmark createBookmark(@RequestBody Bookmark bookmark){
 		
-		User user_id = user_repository.findByUserId(bookmark.getInitUserId());
-		bookmark.setInitUserId(user_id.getId());
-		bookmark.setInitUserName(user_id.getName());
-		bookmark.setInitUserNickName(user_id.getUserId());
+		User me = user_repository.findByUserId(bookmark.getInitUserId());
+		
+		int bookmark_cnt = 0;
+		if(me.getBookmarks()==null){
+			bookmark_cnt = 0;
+		} else {
+			bookmark_cnt = me.getBookmarks().size();
+		}
+		
+		if(hasAlreadyMarkin(me.getBookmarks(), bookmark)){
+			return null;
+		}
+		
+		bookmark.setInitUserId(me.getId());
+		bookmark.setInitUserName(me.getName());
+		bookmark.setInitUserNickName(me.getUserId());
 		
 		System.out.println("Insert new bookmark");
 		System.out.println("title: "+bookmark.getTitle());
 		System.out.println("url: "+bookmark.getUrl());
-		System.out.println("init_user_id: "+user_id.getId());
-		System.out.println("init_user_nick: "+user_id.getUserId());
-		System.out.println("init_user_name: "+user_id.getName());
+		System.out.println("init_user_id: "+me.getId());
+		System.out.println("init_user_nick: "+me.getUserId());
+		System.out.println("init_user_name: "+me.getName());
 		System.out.println("privacy: "+bookmark.isPrivacy());
 		
 		//Create new bookmark
@@ -168,13 +251,46 @@ public class BookmarkController {
 		
 		Bookmark saved_bookmark = bookmark_repository.save(bookmark);
 		
-		//update user bookmark list
-		User mine = user_repository.findOne(bookmark.getInitUserId());
-		mine.getBookmarks().add(saved_bookmark.getId());
-		user_repository.save(mine);		
-				
+		//update user info
+		if(bookmark_cnt==0){
+			me.setInvitation(makeInvitationList(me.getUserId()));
+		}
+		me.getBookmarks().add(saved_bookmark.getId());
+		
+		user_repository.save(me);		
 		return saved_bookmark;
 
+	}
+	
+	//comment.userId comments on {bookmark_id} 
+	@RequestMapping(method=RequestMethod.POST, value="/comment/{bookmark_id}")
+	@ResponseBody
+	public Comment addComment(@PathVariable String bookmark_id, @RequestBody Comment comment){
+		System.out.println("add comment");
+		Bookmark bookmark = bookmark_repository.findOne(bookmark_id);
+		User me = user_repository.findByUserId(comment.getUserId());
+		comment.setDate(System.currentTimeMillis());
+		comment.setUserKeyId(me.getId());
+		comment.setUserName(me.getName());
+		
+		bookmark.getComments().add(comment);
+		Bookmark bookmark_w_new_comment = bookmark_repository.save(bookmark);
+		int comment_size = bookmark_w_new_comment.getComments().size();
+		if(comment_size==0){
+			return null;
+		}
+		return bookmark_w_new_comment.getComments().get(comment_size-1);
+	}
+	
+	//get comments of {bookmark_id}
+	@RequestMapping(method=RequestMethod.GET, value="/comment/{bookmark_id}")
+	@ResponseBody
+	public ArrayList<Comment> getComment(@PathVariable String bookmark_id){
+		System.out.println("add comment");
+		Bookmark bookmark = bookmark_repository.findOne(bookmark_id);
+		ArrayList<Comment> comments = (ArrayList<Comment>)bookmark.getComments();
+		return comments;
+		
 	}
 
 }

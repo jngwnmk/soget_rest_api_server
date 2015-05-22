@@ -36,10 +36,10 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter{
 
 	@Override
 	public void configure(ClientDetailsServiceConfigurer clients) throws Exception {
-
+		
 		clients.inMemory().withClient(applicationName)
 				.authorizedGrantTypes("password", "authorization_code", "refresh_token")
-				.authorities("ROLE_USER").scopes("write")
+				.authorities("ROLE_USER").scopes("write").accessTokenValiditySeconds(3600)
 				.secret("123456")
 				.resourceIds(applicationName);
 	}
