@@ -63,6 +63,13 @@ public class MarkIn {
 	public void setDate(long date) {
 		this.date = date;
 	}
+	@Override
+	public String toString() {
+		return "MarkIn [id=" + id + ", bookmarkId=" + bookmarkId
+				+ ", userKeyId=" + userKeyId + ", userName=" + userName
+				+ ", userId=" + userId + ", tags=" + tags + ", date=" + date
+				+ ", privacy=" + privacy + "]";
+	}
 	
 	
 	

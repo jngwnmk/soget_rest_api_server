@@ -2,6 +2,7 @@ package soget.controller;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import org.jsoup.Jsoup;
@@ -49,13 +50,69 @@ public class BookmarkController {
 	@Autowired
 	private MarkInRepository markin_repository;
 	
+	
+	private List<Bookmark> mergeBookmarkAndMarkInInfo(List<Bookmark> bookmarks, List<MarkIn> markin){
+		
+		List<Bookmark> outputBookmark = new ArrayList<Bookmark>();
+		
+		System.out.println("Reference Bookmark:"+bookmarks.toString());
+		System.out.println("Reference MarkIn:"+markin.toString());
+		HashMap<String, Bookmark> bookmark_map = new HashMap<String,Bookmark>();
+		
+		for(int i = 0 ; i < bookmarks.size() ; ++i){
+			bookmark_map.put(bookmarks.get(i).getId(), bookmarks.get(i));
+		}
+		for(int i = 0 ; i < markin.size(); ++i){
+			String ref_bookmark_id = markin.get(i).getBookmarkId();
+			Bookmark ref_bookmark = bookmark_map.get(ref_bookmark_id);
+			Bookmark new_bookmark = new Bookmark();
+			new_bookmark.setId(ref_bookmark.getId());
+			new_bookmark.setTitle(ref_bookmark.getTitle());
+			new_bookmark.setUrl(ref_bookmark.getUrl());
+			new_bookmark.setImg_url(ref_bookmark.getImg_url());
+			new_bookmark.setDescription(ref_bookmark.getDescription());
+			new_bookmark.setInitUserId(markin.get(i).getUserKeyId());
+			new_bookmark.setInitUserName(markin.get(i).getUserName());
+			new_bookmark.setInitUserNickName(markin.get(i).getUserId());
+			new_bookmark.setFollowers(ref_bookmark.getFollowers());
+			new_bookmark.setDate(markin.get(i).getDate());
+			new_bookmark.setPrivacy(markin.get(i).isPrivacy());
+			new_bookmark.setTags(markin.get(i).getTags());
+			new_bookmark.setComments(ref_bookmark.getComments());
+			new_bookmark.setCategory(ref_bookmark.getCategory());
+			outputBookmark.add(new_bookmark);
+			System.out.println("output Bookmark:"+outputBookmark.toString());
+		}
+		return outputBookmark;
+	}
+	
+	private List<Bookmark> getArchiveList(Page<MarkIn> markin){
+		List<String> bookmark_ids = new ArrayList<String>();
+		for(int i = 0 ; i < markin.getContent().size() ; ++i){
+			bookmark_ids.add(markin.getContent().get(i).getBookmarkId());
+		}
+		List<Bookmark> bookmarks = bookmark_repository.findByIdIn(bookmark_ids);
+		System.out.println("Found bookmark:"+bookmarks.toString());
+		return mergeBookmarkAndMarkInInfo(bookmarks,markin.getContent());
+	}
+	
+	private List<String> makeExclusiveBookmarkList(List<String> outputlist, List<String> inputlist){
+		for(String bookmark : inputlist){
+			Bookmark temp = bookmark_repository.findOne(bookmark);
+			if(temp!=null){
+				outputlist.add(temp.getId());
+			}
+		}
+		return outputlist;
+		
+	}
+	
 	//GET
 	//1. getMyBookmarkList
 	//2. getFriendBookmarkList
-	//3. getFriendsBookmarkListWithDate
-	//4. getAllBookmarkList
+	//3. getDiscover
+	//4. getAllBookmarkList (deprecated)
 	//5. getComment
-	
 	
 	//Get My bookmark list
 	@RequestMapping(method=RequestMethod.GET, value="/{my_id}/{page_num}")
@@ -63,37 +120,27 @@ public class BookmarkController {
 	//public Page<Bookmark> getMyBookmarkList(@PathVariable String my_id, @PathVariable int page_num){
 	public List<Bookmark> getMyBookmarkList(@PathVariable String my_id, @PathVariable int page_num){
 		System.out.println("getMyBookmarkList");
-		//get bookmark id list from my profile
-		User mine = user_repository.findByUserId(my_id);
-		//List<String> bookmark_ids = mine.getBookmarks();
-		//System.out.println("bookmark ids: "+bookmark_ids.toString());
-		//return bookmark_repository.findByIdIn(bookmark_ids, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
-		
-		Page<MarkIn> markin = markin_repository.findByUserKeyId(mine.getId(), new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
-		List<String> bookmark_ids = new ArrayList<String>();
-		for(int i = 0 ; i < markin.getContent().size() ; ++i){
-			bookmark_ids.add(markin.getContent().get(i).getBookmarkId());
-		}
-		return bookmark_repository.findByIdIn(bookmark_ids);
+		User user = user_repository.findByUserId(my_id);
+		Page<MarkIn> markin = markin_repository.findByUserKeyId(user.getId(), new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		return getArchiveList(markin);
 	}
 	
 	//Get {user_id}'s bookmark list
 	//Same as getMyBookmarkList(), but not shows the privacy is true
 	@RequestMapping(method=RequestMethod.GET, value="/friend/{friend_id}/{page_num}")
 	@ResponseBody
-	public Page<Bookmark> getFriendBookmarkList(@PathVariable String friend_id, @PathVariable int page_num){
+	public List<Bookmark> getFriendBookmarkList(@PathVariable String friend_id, @PathVariable int page_num){
 		System.out.println("getFriendBookmarkList");
-		User friend = user_repository.findByUserId(friend_id);
-		List<String> bookmark_ids = friend.getBookmarks();
-		System.out.println("bookmark ids: "+bookmark_ids.toString());
-		return bookmark_repository.findByIdIn(bookmark_ids, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		User user = user_repository.findByUserId(friend_id);
+		Page<MarkIn> markin = markin_repository.findByUserKeyIdAndPrivacyIsFalse(user.getId(), new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		return getArchiveList(markin);
 	}
 	
 	//Get friend's recent bookmark list
 	//TODO: discover에 보이는 방법 변경 필요
 	@RequestMapping(method=RequestMethod.GET, value="/home/friends/{my_id}/{date}/{page_num}")
 	@ResponseBody
-	public Page<Bookmark> getFriendsBookmarkListWithDate(@PathVariable String my_id, @PathVariable long date,@PathVariable int page_num){
+	public List<Bookmark> getDiscover(@PathVariable String my_id, @PathVariable long date,@PathVariable int page_num){
 		System.out.println("getFriendsBookmarkList");
 		User mine = user_repository.findByUserId(my_id);
 		List<String> friends = mine.getFriends();
@@ -101,23 +148,15 @@ public class BookmarkController {
 		List<String> my_bookmark = mine.getBookmarks();
 		List<String> my_trashcan = mine.getTrashcan();
 		List<String> exclusivelist = new ArrayList<String>();
-		
-		for(String bookmark : my_bookmark){
-			Bookmark temp = bookmark_repository.findOne(bookmark);
-			if(temp!=null){
-				exclusivelist.add(temp.getUrl());
-			}
-		}
-		
-		for(String trash : my_trashcan){
-			Bookmark temp = bookmark_repository.findOne(trash);
-			if(temp!=null){
-				exclusivelist.add(temp.getUrl());
-			}
-		}
+		exclusivelist = makeExclusiveBookmarkList(exclusivelist, my_bookmark);
+		System.out.println(exclusivelist.toString());
+		exclusivelist = makeExclusiveBookmarkList(exclusivelist, my_trashcan);
+		System.out.println(exclusivelist.toString());
 		//return bookmark_repository.findByInitUserIdInAndUrlNotInAndDateLessThan(friends, exclusivelist, date ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
-		return bookmark_repository.findByInitUserIdInAndUrlNotInAndDateLessThanAndPrivacyIsFalse(friends, exclusivelist, date ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
-		
+		//return bookmark_repository.findByInitUserIdInAndUrlNotInAndDateLessThanAndPrivacyIsFalse(friends, exclusivelist, date ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		Page<MarkIn> markin = markin_repository.findByUserKeyIdInAndBookmarkIdNotInAndDateLessThan(friends, exclusivelist, date, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		System.out.println("MarkIn discover :" + markin.getContent().toString());
+		return getArchiveList(markin);
 	}
 	
 	//Get all user's recent bookmark list
@@ -192,7 +231,7 @@ public class BookmarkController {
 		follower.setUserId(me.getUserId());
 		follower.setUserName(me.getName());
 		ref_bookmark.getFollowers().add(follower);
-		bookmark_repository.save(ref_bookmark);
+		Bookmark saved_bookmark = bookmark_repository.save(ref_bookmark);
 		///////////////////////////////////////////////////////////////////
 		
 		/////////////4. 나의 bookmark리스트에 해당 bookmark_id 추가//////////////
@@ -200,7 +239,19 @@ public class BookmarkController {
 		user_repository.save(me);
 		///////////////////////////////////////////////////////////////////
 		
-		return ref_bookmark;
+		/////////////5. markin repository에 추가/////////////////////////////
+		MarkIn markin = new MarkIn();
+		markin.setBookmarkId(saved_bookmark.getId());
+		markin.setDate(System.currentTimeMillis());
+		markin.setPrivacy(follower.isPrivacy());
+		markin.setTags(follower.getTags());
+		markin.setUserKeyId(follower.getUserKeyId());
+		markin.setUserId(follower.getUserId());
+		markin.setUserName(follower.getUserName());
+		markin_repository.save(markin);
+		///////////////////////////////////////////////////////////////////	
+		
+		return saved_bookmark;
 		
 	}
 	

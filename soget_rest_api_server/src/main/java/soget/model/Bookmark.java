@@ -108,6 +108,19 @@ public class Bookmark {
 	public void setDescription(String description) {
 		this.description = description;
 	}
+	@Override
+	public String toString() {
+		return "Bookmark [id=" + id + ", title=" + title + ", url=" + url
+				+ ", img_url=" + img_url + ", description=" + description
+				+ ", initUserId=" + initUserId + ", initUserName="
+				+ initUserName + ", initUserNickName=" + initUserNickName
+				+ ", followers=" + followers + ", date=" + date + ", privacy="
+				+ privacy + ", comments=" + comments + ", tags=" + tags
+				+ ", category=" + category + "]";
+	}
+	
+	
+	
 	
 	
 	
