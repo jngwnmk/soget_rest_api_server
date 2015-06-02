@@ -116,12 +116,12 @@ public class ControllerTest {
 	@Test
 	public void f_addBookmark() throws Exception{
 		createBookmark("test bookmark1", "google.com", "jngwnmk", false);
-		createBookmark("test bookmark2", "google.com", "mina", false);
-		createBookmark("test bookmark3", "google.com", "jngwnmk", false);
-		createBookmark("test bookmark4", "google.com", "jihyeon", false);
-		createBookmark("test bookmark5", "google.com", "mina", false);
-		createBookmark("test bookmark6", "google.com", "woosung", false);
-		createBookmark("test bookmark7", "google.com", "woosung", false);
+		//createBookmark("test bookmark2", "google.com", "mina", false);
+		//createBookmark("test bookmark3", "google.com", "jngwnmk", false);
+		//createBookmark("test bookmark4", "google.com", "jihyeon", false);
+		//createBookmark("test bookmark5", "google.com", "mina", false);
+		//createBookmark("test bookmark6", "google.com", "woosung", false);
+		//createBookmark("test bookmark7", "google.com", "woosung", false);
 		
 	}
 	

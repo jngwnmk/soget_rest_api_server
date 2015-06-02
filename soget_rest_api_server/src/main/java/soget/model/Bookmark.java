@@ -11,10 +11,11 @@ public class Bookmark {
 	private String title;
 	private String url;
 	private String img_url;
+	private String description;
 	private String initUserId;
 	private String initUserName;
 	private String initUserNickName;
-	private List<String> followers;
+	private List<Follower> followers;
 	private long date;
 	private boolean privacy;
 	private List<Comment> comments;
@@ -52,10 +53,11 @@ public class Bookmark {
 	public void setInitUserId(String initUserId) {
 		this.initUserId = initUserId;
 	}
-	public List<String> getFollowers() {
+	
+	public List<Follower> getFollowers() {
 		return followers;
 	}
-	public void setFollowers(List<String> followers) {
+	public void setFollowers(List<Follower> followers) {
 		this.followers = followers;
 	}
 	public long getDate() {
@@ -100,6 +102,13 @@ public class Bookmark {
 	public void setInitUserNickName(String initUserNickName) {
 		this.initUserNickName = initUserNickName;
 	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	
 	
 	
 }

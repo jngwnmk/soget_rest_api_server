@@ -13,6 +13,16 @@ import sun.misc.BASE64Encoder;
 public class Util {
 	public final static String KEY ="markin";
 	
+	public static BigInteger randomBigInteger(BigInteger n) {
+		SecureRandom rnd = new SecureRandom();
+        int maxNumBitLength = n.bitLength();
+        BigInteger aRandomBigInt;
+        do {
+            aRandomBigInt = new BigInteger(maxNumBitLength, rnd);
+            // compare random number lessthan ginven number
+        } while (aRandomBigInt.compareTo(n) > 0); 
+        return aRandomBigInt;
+    }
 	
     public static BigInteger nextRandomInteger() {
 			SecureRandom random = new SecureRandom();

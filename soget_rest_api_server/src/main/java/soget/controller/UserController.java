@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import soget.model.Invitation;
 import soget.model.User;
+import soget.repository.InvitationRepository;
 import soget.repository.UserRepository;
 import soget.security.Util;
 
@@ -27,6 +29,10 @@ public class UserController {
 	
 	@Autowired
 	private UserRepository user_repository;
+	
+	@Autowired
+	private InvitationRepository invitation_repository;
+	
 	
 	@RequestMapping(value = "/login", produces = "text/plain")
 	public String login() {
@@ -41,6 +47,17 @@ public class UserController {
 	public String logout() {
 		System.out.println(" *** MainRestController.logout");
 		return "Logout invalidates token on server-side. It must come as a POST request with valid X-Auth-Token, URL is configured for MyAuthenticationFilter.";
+	}
+	
+	@RequestMapping(method=RequestMethod.GET, value="/info/{user_id}")
+	@ResponseBody
+	public User getUserInfo(@PathVariable String user_id){
+		User find_user = user_repository.findByUserId(user_id);
+		if(find_user==null){
+			return null;
+		} else {
+			return find_user;
+		}
 	}
 	
 	//Register user
@@ -77,12 +94,18 @@ public class UserController {
 		user.setBookmarks(new ArrayList<String>());
 		user.setTrashcan(new ArrayList<String>());
 		user.setInvitation(new ArrayList<String>());
+		user.setInvitation_sent(new ArrayList<String>());
 		
-		String decrypt = soget.security.Util.Decrypt(user.getInvitationCode(), Util.KEY);
-		StringTokenizer st = new StringTokenizer(decrypt,"|");
-		String hostUserId = st.nextToken();
-		String invitationNumber = st.nextToken();
-	
+		//String decrypt = soget.security.Util.Decrypt(user.getInvitationCode(), Util.KEY);
+		//StringTokenizer st = new StringTokenizer(decrypt,"|");
+		
+		Invitation invitation = invitation_repository.findByInvitationNum(user.getInvitationCode());
+		if(invitation==null){
+			System.out.println("invalid invitation");
+			return null;
+		}
+		String hostUserId = invitation.getOwnerUserId();
+		
 		//Make friendship between new user and host user 
 		User friend = user_repository.findByUserId(hostUserId);
 		User new_user = user_repository.save(user);
@@ -90,10 +113,13 @@ public class UserController {
 		friend.getFriends().add(new_user.getId());
 		new_user.getFriends().add(friend.getId());
 		
-		//Delete invitation number from invitation list
-		List<String> invitationList = friend.getInvitation();
-		invitationList.remove(user.getInvitationCode());
-		friend.setInvitation(invitationList);
+		//Delete invitation number from invitation sent list
+		List<String> invitationSentList = friend.getInvitation_sent();
+		invitationSentList.remove(user.getInvitationCode());
+		friend.setInvitation_sent(invitationSentList);
+		
+		//Delete from invitation collection
+		invitation_repository.delete(invitation);
 		
 		user_repository.save(friend);
 		user_repository.save(new_user);
@@ -121,7 +147,7 @@ public class UserController {
 	/*
 	 * Code :  {UserId}|{Invitation Code} 
 	 */
-	@RequestMapping(method=RequestMethod.GET, value="/register/checkInvitationCode/{code}")
+	/*@RequestMapping(method=RequestMethod.GET, value="/register/checkInvitationCode/{code}")
 	@ResponseBody
 	public boolean checkInvitationCode(@PathVariable String code) throws Exception{
 		 String decrypt = soget.security.Util.Decrypt(code, Util.KEY);
@@ -133,7 +159,7 @@ public class UserController {
 			 System.out.println("unvalidated invitation code");
 			 return false;
 		 } else {
-			 if(host_user.getInvitation().contains(invitationNumber))
+			 if(host_user.getInvitation_sent().contains(invitationNumber))
 			 {
 				 return true;
 			 } else {
@@ -141,6 +167,25 @@ public class UserController {
 			 }
 		 }
 		 
+	}*/
+	
+	@RequestMapping(method=RequestMethod.GET, value="/register/checkInvitationCode/{code}")
+	@ResponseBody
+	public boolean checkInvitationCode(@PathVariable String code) throws Exception{
+		 Invitation invitation = invitation_repository.findByInvitationNum(code);
+		 if(invitation==null){
+			 System.out.println("not validated invitation code");
+			 return false;
+		 } else {
+			 String invitatioin_code_owner_user = invitation.getOwnerUserId();
+			 User host_user = user_repository.findByUserId(invitatioin_code_owner_user);
+			 if(host_user.getInvitation_sent().contains(code)){
+				 return true;
+			 } else {
+				 return false;
+			 }
+			 
+		 }
 	}
 	
 	//Password change
@@ -267,21 +312,54 @@ public class UserController {
 	}
 	
 	//Make Invitation Code
-	@RequestMapping(method=RequestMethod.PUT, value="/invitation/{user_id}")
+	/*@RequestMapping(method=RequestMethod.PUT, value="/invitation/{user_id}")
 	@ResponseBody
 	public ArrayList<String> updateInvitationCode(@PathVariable String user_id) throws Exception{
 		System.out.println("updateInvitationCode()");
 		User admin = user_repository.findByUserId(user_id);
+			ArrayList<String> invitations = new ArrayList<String>();
+			for(int i = 0 ; i < 10 ; ++i){
+				BigInteger randomInteger = soget.security.Util.nextRandomInteger();
+				String encrypt = soget.security.Util.Encrypt(admin.getUserId()+"|"+randomInteger, Util.KEY);
+				invitations.add(encrypt);
+			}
+			admin.getInvitation().addAll(invitations);
+			user_repository.save(admin);
+			return invitations;
+		
+	}*/
+	
+	@RequestMapping(method=RequestMethod.PUT, value="/invitation/{user_id}")
+	@ResponseBody
+	public ArrayList<String> updateInvitationCode(@PathVariable String user_id) throws Exception{
+		System.out.println("updateInvitationCode()");
+		User me = user_repository.findByUserId(user_id);
 		ArrayList<String> invitations = new ArrayList<String>();
-		for(int i = 0 ; i < 10 ; ++i){
-			BigInteger randomInteger = soget.security.Util.nextRandomInteger();
-			String encrypt = soget.security.Util.Encrypt(admin.getUserId()+"|"+randomInteger, Util.KEY);
-			invitations.add(encrypt);
-		}
-		admin.getInvitation().addAll(invitations);
-		user_repository.save(admin);
+		BigInteger bigInteger = new BigInteger("999999");
+        BigInteger bigInteger1 = bigInteger.subtract(new BigInteger("100000"));
+        int count = 10;
+        while(count>0){
+        	String invitationNum = soget.security.Util.randomBigInteger(bigInteger1).toString();
+        	System.out.println("InvitationNum:"+invitationNum);
+        	if(invitation_repository.findByInvitationNum(invitationNum)==null){
+        		Invitation invitation = new Invitation();
+            	invitation.setInvitationNum(invitationNum);
+            	invitation.setOwnerUserId(user_id);
+            	invitation_repository.save(invitation);
+            	invitations.add(invitationNum);
+            	count--;
+            }
+        }
+        System.out.println(me.getInvitation());
+        if(me.getInvitation()!=null){
+        	me.getInvitation().clear();
+        	me.getInvitation().addAll(invitations);
+        }
+        user_repository.save(me);
 		return invitations;
 	}
+	
+	
 	
 	//Get Invitation code
 	@RequestMapping(method=RequestMethod.GET, value="/invitation/{user_id}")
@@ -289,8 +367,33 @@ public class UserController {
 	public ArrayList<String> getInvitationCode(@PathVariable String user_id) throws Exception{
 			System.out.println("getInivationCode()");
 			User admin = user_repository.findByUserId(user_id);
-			
 			return (ArrayList<String>)(admin.getInvitation());
+	}
+	
+	//Send Invitation Code 
+	@RequestMapping(method=RequestMethod.PUT, value="/invitation/send/{user_id}")
+	@ResponseBody
+	public boolean sendInvitationCode(@PathVariable String user_id, @RequestBody String invitation_code){
+			System.out.println("sendInvitationCode:called");
+			User me = user_repository.findByUserId(user_id);
+			System.out.println("sendInvitationCode:"+me.getInvitation().toString());
+			System.out.println("sendInvitationCode:"+invitation_code);
+			if(invitation_code.contains("\""))
+			{
+				invitation_code = invitation_code.replaceAll("\"", "");
+			}
+			if(me.getInvitation().contains(invitation_code)){
+				System.out.println("sendInvitationCode:has");
+				me.getInvitation().remove(invitation_code);
+				me.getInvitation_sent().add(invitation_code);
+				user_repository.save(me);
+				return true;
+			} else {
+
+				System.out.println("sendInvitationCode:don't has");
+				return false;
+			}
+			
 	}
 	
 	
