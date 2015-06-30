@@ -4,7 +4,7 @@ import java.util.Date;
 
 import org.springframework.data.annotation.Id;
 
-public class Comment {
+public class Comment implements Comparable<Comment>{
 	
 	private long date;
 	private String userKeyId;        //Unique Object Id
@@ -42,6 +42,14 @@ public class Comment {
 	}
 	public void setUserName(String userName) {
 		this.userName = userName;
+	}
+	@Override
+	public int compareTo(Comment o) {
+		if(o.date<=this.date){
+			return -1;
+		} else {
+			return 1;
+		}
 	}
 	
 	

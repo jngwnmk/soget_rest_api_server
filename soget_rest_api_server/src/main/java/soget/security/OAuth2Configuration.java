@@ -39,7 +39,7 @@ public class OAuth2Configuration extends AuthorizationServerConfigurerAdapter{
 		
 		clients.inMemory().withClient(applicationName)
 				.authorizedGrantTypes("password", "authorization_code", "refresh_token")
-				.authorities("ROLE_USER").scopes("write").accessTokenValiditySeconds(3600)
+				.authorities("ROLE_USER").scopes("write").accessTokenValiditySeconds(60*60*60*60)
 				.secret("123456")
 				.resourceIds(applicationName);
 	}

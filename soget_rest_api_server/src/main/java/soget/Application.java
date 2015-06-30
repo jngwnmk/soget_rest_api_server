@@ -39,7 +39,7 @@ public class Application extends SpringBootServletInitializer{
 					response.setHeader("Access-Control-Allow-Origin", origin);
 					response.setHeader("Access-Control-Allow-Methods",
 							"POST,GET,OPTIONS,DELETE");
-					response.setHeader("Access-Control-Max-Age", Long.toString(60 * 60));
+					response.setHeader("Access-Control-Max-Age", Long.toString(60 * 60 * 60 * 60));
 					response.setHeader("Access-Control-Allow-Credentials", "true");
 					response.setHeader(
 							"Access-Control-Allow-Headers",

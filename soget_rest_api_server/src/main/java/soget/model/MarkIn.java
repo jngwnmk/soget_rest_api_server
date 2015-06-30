@@ -10,7 +10,7 @@ public class MarkIn {
 	private String bookmarkId;
 	private String userKeyId;
 	private String userName;
-	private String userId;
+	private String userId;  //UserNickName
 	private List<String> tags;
 	private long date;
 	private boolean privacy;

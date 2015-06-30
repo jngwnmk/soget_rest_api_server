@@ -21,6 +21,7 @@ public class Bookmark {
 	private List<Comment> comments;
 	private List<String> tags;
 	private List<String> category;
+	private String markinId;
 	
 	
 	public String getImg_url() {
@@ -108,6 +109,13 @@ public class Bookmark {
 	public void setDescription(String description) {
 		this.description = description;
 	}
+	
+	public String getMarkinId() {
+		return markinId;
+	}
+	public void setMarkinId(String markinId) {
+		this.markinId = markinId;
+	}
 	@Override
 	public String toString() {
 		return "Bookmark [id=" + id + ", title=" + title + ", url=" + url
@@ -116,7 +124,7 @@ public class Bookmark {
 				+ initUserName + ", initUserNickName=" + initUserNickName
 				+ ", followers=" + followers + ", date=" + date + ", privacy="
 				+ privacy + ", comments=" + comments + ", tags=" + tags
-				+ ", category=" + category + "]";
+				+ ", category=" + category + ", markinId=" + markinId + "]";
 	}
 	
 	

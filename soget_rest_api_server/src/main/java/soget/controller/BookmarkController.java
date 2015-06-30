@@ -2,6 +2,7 @@ package soget.controller;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
@@ -54,7 +55,6 @@ public class BookmarkController {
 	private List<Bookmark> mergeBookmarkAndMarkInInfo(List<Bookmark> bookmarks, List<MarkIn> markin){
 		
 		List<Bookmark> outputBookmark = new ArrayList<Bookmark>();
-		
 		System.out.println("Reference Bookmark:"+bookmarks.toString());
 		System.out.println("Reference MarkIn:"+markin.toString());
 		HashMap<String, Bookmark> bookmark_map = new HashMap<String,Bookmark>();
@@ -80,8 +80,9 @@ public class BookmarkController {
 			new_bookmark.setTags(markin.get(i).getTags());
 			new_bookmark.setComments(ref_bookmark.getComments());
 			new_bookmark.setCategory(ref_bookmark.getCategory());
+			new_bookmark.setMarkinId(markin.get(i).getId());
 			outputBookmark.add(new_bookmark);
-			System.out.println("output Bookmark:"+outputBookmark.toString());
+			//System.out.println("output Bookmark:"+outputBookmark.toString());
 		}
 		return outputBookmark;
 	}
@@ -148,13 +149,14 @@ public class BookmarkController {
 		List<String> my_bookmark = mine.getBookmarks();
 		List<String> my_trashcan = mine.getTrashcan();
 		List<String> exclusivelist = new ArrayList<String>();
-		exclusivelist = makeExclusiveBookmarkList(exclusivelist, my_bookmark);
-		System.out.println(exclusivelist.toString());
+		//exclusivelist = makeExclusiveBookmarkList(exclusivelist, my_bookmark);
+		//System.out.println(exclusivelist.toString());
 		exclusivelist = makeExclusiveBookmarkList(exclusivelist, my_trashcan);
 		System.out.println(exclusivelist.toString());
 		//return bookmark_repository.findByInitUserIdInAndUrlNotInAndDateLessThan(friends, exclusivelist, date ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
 		//return bookmark_repository.findByInitUserIdInAndUrlNotInAndDateLessThanAndPrivacyIsFalse(friends, exclusivelist, date ,new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
-		Page<MarkIn> markin = markin_repository.findByUserKeyIdInAndBookmarkIdNotInAndDateLessThan(friends, exclusivelist, date, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		//Page<MarkIn> markin = markin_repository.findByUserKeyIdInAndBookmarkIdNotInAndDateLessThan(friends, exclusivelist, date, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
+		Page<MarkIn> markin = markin_repository.findByUserKeyIdInAndBookmarkIdNotInAndDateLessThanAndPrivacyIsFalse(friends, exclusivelist, date, new PageRequest(page_num,PAGE_SIZE, new Sort(new Order(Direction.DESC,"date"))));
 		System.out.println("MarkIn discover :" + markin.getContent().toString());
 		return getArchiveList(markin);
 	}
@@ -181,12 +183,15 @@ public class BookmarkController {
 		System.out.println("add comment");
 		Bookmark bookmark = bookmark_repository.findOne(bookmark_id);
 		ArrayList<Comment> comments = (ArrayList<Comment>)bookmark.getComments();
+		Collections.sort(comments);
 		return comments;
 	}
 	
 	//PUT
 	//1. updateBookmarkList
 	//2. updateTrashcanList
+	//3. updatePrivacy
+	
 	
 	//Insert {bookmark_id} to my bookmark list
 	//{bookmark_id}의 followers 에 {user_id}를 추가
@@ -265,6 +270,16 @@ public class BookmarkController {
 		user_repository.save(me);
 	}
 	
+	//Update privacy of {MarkIn_id}
+	@RequestMapping(method=RequestMethod.PUT, value="/privacy/{user_id}/{markin_id}")
+	@ResponseBody
+	public void updatePrivacy(@PathVariable String user_id, @PathVariable String markin_id, @RequestBody boolean privacy){
+		System.out.println("Change Privacy of "+markin_id+" : "+privacy);
+		MarkIn markin = markin_repository.findOne(markin_id);
+		markin.setPrivacy(privacy);
+		markin_repository.save(markin);
+	}
+	
 	//POST
 	//1. createBookmark
 	//2. addComment
@@ -329,8 +344,8 @@ public class BookmarkController {
 		markin.setPrivacy(saved_bookmark.isPrivacy());
 		markin.setTags(saved_bookmark.getTags());
 		markin.setUserKeyId(saved_bookmark.getInitUserId());
-		markin.setUserId(saved_bookmark.getInitUserName());
-		markin.setUserName(saved_bookmark.getInitUserNickName());
+		markin.setUserId(saved_bookmark.getInitUserNickName());
+		markin.setUserName(saved_bookmark.getInitUserName());
 		markin_repository.save(markin);
 		///////////////////////////////////////////////////////////////////
 	
